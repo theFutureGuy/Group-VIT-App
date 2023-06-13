@@ -5,6 +5,7 @@ import styles from '@/styles/Home.module.css'
 import Login from '@/components/Login'
 import useAuthUser from '@/hooks/useAuthUser'
 import Sidebar from '@/components/Sidebar'
+import Chat from '@/components/Chat'
 const inter = Inter({ subsets: ['latin'] })
 
 export default function Home() {
@@ -14,6 +15,7 @@ export default function Home() {
     <div className='app'>
       <div className='app__body'>
           <Sidebar  user={user}/>
+          <Chat user = {user}/>
       </div>
     </div>
   )
