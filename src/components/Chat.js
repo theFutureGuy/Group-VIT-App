@@ -5,6 +5,13 @@ import { Avatar, IconButton, Menu, MenuItem } from '@mui/material';
 import { AddAPhoto, AddPhotoAlternate, MoreVert } from '@mui/icons-material';
 import MediaPreview from './MediaPreview';
 import ChatFooter from './ChatFooter';
+import { nanoid } from 'nanoid';
+import { addDoc, collection, doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import Compressor from 'compressorjs';
+import { db, storage } from '@/utils/firebase';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import useChatMessages from '@/hooks/useChatMessages';
+import ChatMessages from './ChatMessages';
 
 function Chat({user}) {
   const router = useRouter()
@@ -13,9 +20,13 @@ function Chat({user}) {
   const group = useGroup(groupId,userId)
   const[image,setImage] = useState(null);
   const[src,setSrc] = useState('');
-  const[] = useState(null)
+  const[audioId,setAudioId] = useState('');
+  const[input,setInput] = useState('')
+  const messages = useChatMessages(groupId)
 
-  function showPreview(event){
+
+
+function showPreview(event){
     const file = event.target.files[0]
     if (file){
       setImage(file)
@@ -28,9 +39,52 @@ function Chat({user}) {
   }
 
   function closePreview() {
-    setSrc('')
+    setSrc("")
     setImage(null)
   }
+
+async function sendMessage(e){
+      e.preventDefault()
+      setInput('')
+      if(image) closePreview()
+      const imgName = nanoid()
+      const newMsg = {
+        name:user.displayName,
+        message:input,
+        uid:user.uid,
+        timestamp:serverTimestamp(),
+        time: new Date().toUTCString(),
+        ...(image ? {imgUrl:"uploading", imgName}:{})
+      }
+      
+      
+      await setDoc(doc(db,`users/${userId}/chats/${groupId}`),{
+        name:group.name,
+        photoURL:group.photoURL || null,
+        timestamp:serverTimestamp()
+      });
+
+      const newDoc = await addDoc(collection(db,`groups/${groupId}/messages`),newMsg);
+      if(image) {
+        new Compressor(image,{
+          quality:0.8,
+          maxWidth:1920,
+          async success(result){
+            setSrc('')
+            setImage(null)
+            await uploadBytes(ref(storage,`images/${imgName}`),result)
+           const url = await getDownloadURL(ref(storage,`images/${imgName}`)) 
+          //  by docs for storage.
+
+          await updateDoc(doc(db,`groups/${groupId}/messages/${newDoc.id}`),{
+            imgUrl:url
+          });
+          }
+
+        })
+      }
+  }
+
 
   if (!group) return null
   return (
@@ -60,8 +114,16 @@ function Chat({user}) {
             </Menu>
         </div>
       </div>
+
+      <div className='chat__body--container'>
+        <div className='chat__body'>
+          <ChatMessages messages={messages} user={user} groupId={groupId} audioId={audioId} setAudioId={setAudioId} />
+
+        </div>
+      </div>
+
         <MediaPreview src={src} closePreview = {closePreview} />
-        <ChatFooter />
+        <ChatFooter input={input} onChange={e => setInput(e.target.value)} image= {image} user={user} group = {group} groupId={groupId} sendMessage={sendMessage} setAudioId={setAudioId} />
     </div>
   );
 }
