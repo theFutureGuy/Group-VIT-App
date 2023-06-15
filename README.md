@@ -1,8 +1,8 @@
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 # New Chat-app:
 ## Group-VIT app ##
-#### <u> Its an App to create Private and Public servers. </u>
-#### functionalities:
+#### <u>Its an App to create Private and Public servers.
+#### Functionalities:
 1) Firebase Auth with google signin and session handling.
 2) Create servers (both private and public).
 3) Messaging including data formats with audio,videos,gifs,photos,Text messages.
