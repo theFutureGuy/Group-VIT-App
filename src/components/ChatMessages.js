@@ -1,7 +1,7 @@
 import { CircularProgress } from "@mui/material"
 import AudioPlayer from "./AudioPlayer"
 
-export default function ChatMessages({messages,user,groupId}){
+export default function ChatMessages({messages,user,groupId,audioId,setAudioId,}){
 
     if(!messages){ return null}
     return messages.map(message => {
@@ -22,7 +22,7 @@ export default function ChatMessages({messages,user,groupId}){
                 ) : null
             }
             {message.audioname ? (
-                <div></div>
+                <AudioPlayer sender={isSender} groupId={groupId} id={message.id} audioId={audioId} audioUrl={message.audioUrl} setAudioId={setAudioId}/>
             ):(<span className="chat__message--message">{message.message}</span>)}
 
             <span className="chat__timestamp">{message.time}</span>

@@ -1,15 +1,15 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/router';
 import useGroup from '@/hooks/useGroup';
-import { Avatar, IconButton, Menu, MenuItem } from '@mui/material';
+import { Avatar, CircularProgress, IconButton, Menu, MenuItem } from '@mui/material';
 import { AddAPhoto, AddPhotoAlternate, MoreVert } from '@mui/icons-material';
 import MediaPreview from './MediaPreview';
 import ChatFooter from './ChatFooter';
 import { nanoid } from 'nanoid';
-import { addDoc, collection, doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import Compressor from 'compressorjs';
 import { db, storage } from '@/utils/firebase';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import useChatMessages from '@/hooks/useChatMessages';
 import ChatMessages from './ChatMessages';
 
@@ -22,6 +22,8 @@ function Chat({user}) {
   const[src,setSrc] = useState('');
   const[audioId,setAudioId] = useState('');
   const[input,setInput] = useState('')
+  const [openMenu,setOpenMenu] = useState(null)
+  const[isDeleting,setDeleting] = useState(false)
   const messages = useChatMessages(groupId)
 
 
@@ -85,6 +87,40 @@ async function sendMessage(e){
       }
   }
 
+  async function deleteGroup(){
+    setOpenMenu(null)
+    setDeleting(true)
+    try{
+      const userChatsRef = doc(db,`user/${userId}/chats/${groupId}`)
+      const groupRef = doc(db,`groups/${groupId}`)
+      const groupMessagesRef = collection(db,`groups/${groupId}/messages`)
+      const groupMessages = await getDocs(query(groupMessagesRef))
+      const audioFiles = []
+      const imageFiles = []
+
+      groupMessages?.docs.forEach(doc => {
+        if(doc.data().audioName()){
+          audioFiles.push(doc.data().audioName)
+        }
+        else if (doc.data().audioName){
+          imageFiles.push(doc.data().imageName)
+        }
+      })
+
+      await Promise.all([
+        deleteDoc(userChatsRef),
+        deleteDoc(groupRef),
+        ...groupMessages.docs.map( doc => deleteDoc(doc.ref)),
+        ...imageFiles.map(img => deleteObject(ref(storage,`images/${img}`))),
+        ...audioFiles.map(aud => deleteObject(ref(storage,`audio/${aud}`))),
+      ])
+
+    }catch(e){console.log("Deletion error...",e.message)}
+    finally{
+      setDeleting(false)
+    }
+  }
+
 
   if (!group) return null
   return (
@@ -105,13 +141,15 @@ async function sendMessage(e){
                 <AddPhotoAlternate />
               </label>
             </IconButton>
-            <IconButton>
+            
+            
+            <IconButton  onClick={event => setOpenMenu(event.currentTarget)}>
               <MoreVert />
             </IconButton>
- 
-            <Menu id='menu' keepMounted>
-              <MenuItem>Delete group</MenuItem>
+            <Menu id='menu' anchorEl={openMenu} open={!!openMenu}  onClose ={() => {setOpenMenu(null)}} keepMounted>
+              <MenuItem onClick={deleteGroup}>Delete group</MenuItem>
             </Menu>
+
         </div>
       </div>
 
@@ -124,6 +162,12 @@ async function sendMessage(e){
 
         <MediaPreview src={src} closePreview = {closePreview} />
         <ChatFooter input={input} onChange={e => setInput(e.target.value)} image= {image} user={user} group = {group} groupId={groupId} sendMessage={sendMessage} setAudioId={setAudioId} />
+
+        {isDeleting && (
+          <div className='chat__deleting'>
+            <CircularProgress />
+          </div>
+        )}
     </div>
   );
 }

@@ -1,7 +1,9 @@
-import { db } from '@/utils/firebase';
+import { db, storage } from '@/utils/firebase';
 import recordAudio from '@/utils/recordAudio';
 import { CancelRounded, CheckCircleRounded, MicRounded, Send } from '@mui/icons-material';
-import { addDoc, collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { nanoid } from 'nanoid';
 import React, { useEffect, useRef, useState } from 'react'
 
 function ChatFooter({input,onChange,image,user,group,groupId,sendMessage,setAudioId }) {
@@ -71,13 +73,29 @@ function pad(val){
             photoURL:group.photoURL,
             timestamp:serverTimestamp()
         })
-        await addDoc(collection(db,`groups/${groupId}/messages`),{
+        const newDoc = await addDoc(collection(db,`groups/${groupId}/messages`),{
             name: user.displayName,
             uid:user.uid,
             timestamp:serverTimestamp(),
             time:new Date().toUTCString(),
-            audioFile
+            audioUrl : "uploading",
+            audioName
         })
+        await uploadBytes(ref(storage,`audio/${audioName}`),audioFile)
+        const url = await getDownloadURL(ref(storage,`audio/${audioName}`))
+        await updateDoc(doc(db,`groups/${groupId}/messages/${newDoc.id}`),{
+           audioUrl:url 
+        })
+    }
+
+    function audioInputChange(event){
+        const audioFile = event.target.files[0];
+        const audioName = nanoid()
+
+        if(audioFile){
+            setAudioId('')
+            sendAudio(audioFile,audioName)
+        }
     }
 
   return (
@@ -90,7 +108,7 @@ function pad(val){
         :(
             <>
             <label htmlFor='capture' className='send__btn' >{recordIcon}</label>
-            <input style={{display:'none'}} type='"file'id='capture' accept='audio/*' capture />
+            <input style={{display:'none'}} type='"file'id='capture' accept='audio/*' capture onChange={audioInputChange} />
             </>
         )
         }
