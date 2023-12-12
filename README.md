@@ -50,14 +50,6 @@ Make sure you have the following installed:
 - Room deletion
 - Admin access
 
-## Contributing
-
-If you'd like to contribute to this project, follow these steps:
-
-1. Fork the repository.
-2. Create a new branch.
-3. Make your changes and commit them.
-4. Push to your fork and submit a pull request.
 
 ## License
 
