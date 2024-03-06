@@ -1,4 +1,4 @@
-# Group-VIT App
+# Group-VIT App (Hackathon Project) 
 
 Welcome to the Group-VIT App! This Next.js project is bootstrapped with create-next-app and serves as a platform to create both private and public servers. The app includes various functionalities like Firebase authentication with Google sign-in, session handling, server creation (private and public), messaging with support for various data formats (audio, videos, gifs, photos, text messages), room deletion, and admin access.
 
